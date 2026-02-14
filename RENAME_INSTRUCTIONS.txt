@@ -1,0 +1,7 @@
+PLEASE RENAME THIS FOLDER TO 'EcoData'
+
+I cannot rename the root folder while it is open in your editor.
+Please:
+1. Close your editor.
+2. Rename 'Build Forms' to 'EcoData'.
+3. Reopen the folder 'EcoData'.

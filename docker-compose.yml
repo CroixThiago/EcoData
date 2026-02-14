@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  # --- Edge Router & Load Balancer ---
+  reverse-proxy:
+    image: traefik:v2.10
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080" # Dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - ecodata-net
+
+  # --- Relational Database (Users, Auth, Structured Metadata) ---
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ecodata_admin
+      POSTGRES_PASSWORD: secure_password
+      POSTGRES_DB: ecodata_core
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - ecodata-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecodata_admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- NoSQL Database (JSON Structures, Logs, Metrics) ---
+  mongo:
+    image: mongo:6.0
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - ecodata-net
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- Event Bus & Cache (Queues, Pub/Sub) ---
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ecodata-net
+
+  # --- Observability ---
+  # (Simulated for Phase 0 init - Full config to follow)
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - ecodata-net
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - ecodata-net
+    depends_on:
+      - prometheus
+
+volumes:
+  postgres_data:
+  mongo_data:
+  redis_data:
+
+networks:
+  ecodata-net:
+    driver: bridge
