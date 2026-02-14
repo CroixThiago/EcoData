@@ -1,1 +1,1 @@
-npm test
+npx turbo run lint
