@@ -12,13 +12,17 @@
     "lint": "npm run lint --workspaces",
     "dev": "npm run dev --workspaces",
     "infra:up": "docker-compose up -d",
-    "infra:down": "docker-compose down"
+    "infra:down": "docker-compose down",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
+    "@commitlint/cli": "^20.4.1",
+    "@commitlint/config-conventional": "^20.4.1",
     "eslint": "^8.0.0",
+    "husky": "^9.1.7",
     "prettier": "^3.0.0",
-    "turbo": "^1.10.0"
+    "turbo": "^1.13.4",
+    "typescript": "^5.0.0"
   },
   "engines": {
     "node": ">=18"
