@@ -1,0 +1,245 @@
+// Prisma Schema — EcoData Sovereign Platform
+// 9 tabelas core: User, Document, Extraction, Schema, SchemaVersion,
+// Form, AuditLog, MarketplaceProduct, Notification
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Autenticação & Identidade ───────────────────────
+
+enum UserRole {
+  insured
+  broker
+  doc_analyst
+  template_creator
+  validator
+  security_admin
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  fullName     String   @map("full_name") @db.VarChar(255)
+  role         UserRole @default(insured)
+  tenantId     String?  @map("tenant_id") @db.Uuid
+  mfaEnabled   Boolean  @default(false) @map("mfa_enabled")
+  avatarUrl    String?  @map("avatar_url") @db.VarChar(512)
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  documents     Document[]
+  extractions   Extraction[]
+  forms         Form[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+// ─── Documentos & Pipeline ───────────────────────────
+
+enum DocumentStatus {
+  pending
+  processing
+  extracted
+  validated
+  rejected
+  archived
+}
+
+model Document {
+  id           String         @id @default(uuid()) @db.Uuid
+  filename     String         @db.VarChar(512)
+  mimeType     String         @map("mime_type") @db.VarChar(100)
+  sizeBytes    Int            @map("size_bytes")
+  hashSha256   String?        @map("hash_sha256") @db.VarChar(64)
+  status       DocumentStatus @default(pending)
+  uploadedById String         @map("uploaded_by_id") @db.Uuid
+  schemaId     String?        @map("schema_id") @db.Uuid
+  metadata     Json?          @default("{}")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  uploadedBy  User         @relation(fields: [uploadedById], references: [id])
+  schema      Schema?      @relation(fields: [schemaId], references: [id])
+  extractions Extraction[]
+
+  @@index([uploadedById])
+  @@index([status])
+  @@index([hashSha256])
+  @@map("documents")
+}
+
+// ─── Resultados de Extração OCR/IA ───────────────────
+
+model Extraction {
+  id           String   @id @default(uuid()) @db.Uuid
+  documentId   String   @map("document_id") @db.Uuid
+  extractedBy  String   @map("extracted_by") @db.Uuid
+  engine       String   @default("tesseract") @db.VarChar(50) // tesseract | openai | manual
+  rawText      String?  @map("raw_text")
+  structured   Json?    // Dados estruturados pela IA
+  confidence   Float    @default(0)
+  durationMs   Int?     @map("duration_ms")
+  vectorId     String?  @map("vector_id") @db.VarChar(255) // ID no Qdrant
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [extractedBy], references: [id])
+
+  @@index([documentId])
+  @@map("extractions")
+}
+
+// ─── Schemas / Contratos de Dados ────────────────────
+
+enum SchemaStatus {
+  active
+  draft
+  deprecated
+}
+
+model Schema {
+  id          String       @id @default(uuid()) @db.Uuid
+  name        String       @db.VarChar(255)
+  slug        String       @unique @db.VarChar(100)
+  description String?
+  status      SchemaStatus @default(draft)
+  fields      Json         // Array de FieldBlueprint
+  version     String       @default("1.0.0") @db.VarChar(20)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  documents Document[]
+  versions  SchemaVersion[]
+  forms     Form[]
+
+  @@index([status])
+  @@map("schemas")
+}
+
+model SchemaVersion {
+  id        String   @id @default(uuid()) @db.Uuid
+  schemaId  String   @map("schema_id") @db.Uuid
+  version   String   @db.VarChar(20)
+  fields    Json     // Snapshot dos campos nesta versão
+  changelog String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  schema Schema @relation(fields: [schemaId], references: [id], onDelete: Cascade)
+
+  @@index([schemaId])
+  @@map("schema_versions")
+}
+
+// ─── Formulários Dinâmicos ───────────────────────────
+
+enum FormStatus {
+  draft
+  submitted
+  approved
+  rejected
+}
+
+model Form {
+  id        String     @id @default(uuid()) @db.Uuid
+  title     String     @db.VarChar(255)
+  schemaId  String     @map("schema_id") @db.Uuid
+  createdBy String     @map("created_by") @db.Uuid
+  status    FormStatus @default(draft)
+  data      Json       @default("{}") // Dados preenchidos
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  schema Schema @relation(fields: [schemaId], references: [id])
+  user   User   @relation(fields: [createdBy], references: [id])
+
+  @@index([schemaId])
+  @@index([createdBy])
+  @@map("forms")
+}
+
+// ─── Trilha de Auditoria Imutável ────────────────────
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  UPLOAD
+  EXTRACT
+  VALIDATE
+  APPROVE
+  REJECT
+}
+
+model AuditLog {
+  id         String      @id @default(uuid()) @db.Uuid
+  userId     String      @map("user_id") @db.Uuid
+  action     AuditAction
+  resource   String      @db.VarChar(100) // Tipo do recurso (document, schema, form, etc.)
+  resourceId String?     @map("resource_id") @db.Uuid
+  details    Json?       // Metadados adicionais
+  ipAddress  String?     @map("ip_address") @db.VarChar(45)
+  userAgent  String?     @map("user_agent") @db.VarChar(512)
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ─── Marketplace ─────────────────────────────────────
+
+model MarketplaceProduct {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(255)
+  description String?
+  category    String   @db.VarChar(100)
+  price       Decimal  @db.Decimal(10, 2)
+  currency    String   @default("BRL") @db.VarChar(3)
+  isActive    Boolean  @default(true) @map("is_active")
+  metadata    Json?    @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@map("marketplace_products")
+}
+
+// ─── Notificações ────────────────────────────────────
+
+enum NotificationType {
+  info
+  warning
+  error
+  success
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  type      NotificationType @default(info)
+  title     String           @db.VarChar(255)
+  message   String
+  read      Boolean          @default(false)
+  link      String?          @db.VarChar(512)
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([createdAt])
+  @@map("notifications")
+}

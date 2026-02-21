@@ -1,0 +1,10 @@
+.next
+node_modules
+*.md
+.git
+.env
+.env.local
+.env.production
+tests/
+coverage/
+.turbo

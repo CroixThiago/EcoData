@@ -1,0 +1,200 @@
+{
+    // 🚀 EcoData MCP Servers - Enterprise Configuration
+    // Each server extends AI capabilities for different aspects of the platform.
+    // Some servers require API keys - add them to your .env or environment variables.
+    "servers": {
+        // ═══════════════════════════════════════════════════════════
+        // 🎨 DESIGN & UI
+        // ═══════════════════════════════════════════════════════════
+        // Figma MCP - Design-to-code, inspect components, extract design tokens
+        "figma": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "-y",
+                "figma-developer-mcp",
+                "--figma-api-key=${FIGMA_API_KEY}"
+            ],
+            "env": {
+                "FIGMA_API_KEY": "${FIGMA_API_KEY}"
+            }
+        },
+        // ═══════════════════════════════════════════════════════════
+        // 🗄️ DATABASES & BACKEND
+        // ═══════════════════════════════════════════════════════════
+        // Supabase MCP - Full Supabase platform management
+        "supabase": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "-y",
+                "@supabase/mcp-server-supabase",
+                "--access-token=${SUPABASE_ACCESS_TOKEN}"
+            ]
+        },
+        // PostgreSQL MCP - Direct read-only access to PostgreSQL databases
+        "postgres": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-postgres",
+                "postgresql://ecodata_admin:secure_password@localhost:5432/ecodata_core"
+            ]
+        },
+        // Upstash (Redis) MCP - Redis cache & queue management
+        "upstash": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "-y",
+                "@upstash/mcp-server"
+            ],
+            "env": {
+                "UPSTASH_EMAIL": "${UPSTASH_EMAIL}",
+                "UPSTASH_API_KEY": "${UPSTASH_API_KEY}"
+            }
+        },
+        // Prisma MCP - Schema management, migrations, query optimization
+        "prisma": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "-y",
+                "prisma-mcp-server"
+            ]
+        },
+        // ═══════════════════════════════════════════════════════════
+        // 🔧 DEVOPS & INFRASTRUCTURE
+        // ═══════════════════════════════════════════════════════════
+        // GitHub MCP - Repos, PRs, Issues, Actions, code search
+        "github": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-github"
+            ],
+            "env": {
+                "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+            }
+        },
+        // Docker MCP - Container management, logs, compose operations
+        "docker": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-docker"
+            ]
+        },
+        // ═══════════════════════════════════════════════════════════
+        // 🌐 BROWSER & TESTING
+        // ═══════════════════════════════════════════════════════════
+        // Puppeteer MCP - Browser automation, screenshots, web scraping, E2E testing
+        "puppeteer": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-puppeteer"
+            ]
+        },
+        // Playwright MCP - Advanced browser testing and automation
+        "playwright": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "-y",
+                "@playwright/mcp@latest"
+            ]
+        },
+        // ═══════════════════════════════════════════════════════════
+        // 🧠 AI & PRODUCTIVITY
+        // ═══════════════════════════════════════════════════════════
+        // Sequential Thinking - Dynamic problem-solving through structured thought chains
+        "sequential-thinking": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-sequential-thinking"
+            ]
+        },
+        // Memory MCP - Persistent knowledge graph memory across sessions
+        "memory": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-memory"
+            ]
+        },
+        // Brave Search MCP - Web search with independent index, privacy-first
+        "brave-search": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-brave-search"
+            ],
+            "env": {
+                "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+            }
+        },
+        // ═══════════════════════════════════════════════════════════
+        // 📊 MONITORING & ANALYTICS
+        // ═══════════════════════════════════════════════════════════
+        // Sentry MCP - Error tracking, stack traces, debugging
+        "sentry": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "-y",
+                "@sentry/mcp-server"
+            ],
+            "env": {
+                "SENTRY_AUTH_TOKEN": "${SENTRY_AUTH_TOKEN}"
+            }
+        },
+        // ═══════════════════════════════════════════════════════════
+        // 💳 BUSINESS & PAYMENTS
+        // ═══════════════════════════════════════════════════════════
+        // Stripe MCP - Payment processing, customers, subscriptions, invoices
+        "stripe": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "-y",
+                "@stripe/mcp",
+                "--tools=all",
+                "--api-key=${STRIPE_SECRET_KEY}"
+            ],
+            "env": {
+                "STRIPE_SECRET_KEY": "${STRIPE_SECRET_KEY}"
+            }
+        },
+        // ═══════════════════════════════════════════════════════════
+        // 📁 FILESYSTEM & UTILITIES
+        // ═══════════════════════════════════════════════════════════
+        // Filesystem MCP - Secure file operations with directory sandboxing
+        "filesystem": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-filesystem",
+                "c:/Projects/EcoData"
+            ]
+        },
+        // Fetch MCP - HTTP requests, API testing, webhook debugging
+        "fetch": {
+            "type": "stdio",
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-fetch"
+            ]
+        }
+    }
+}
